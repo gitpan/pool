@@ -1,0 +1,27 @@
+use Test::More 'no_plan';
+use_ok("[% module.package %]");
+
+# Test constructor
+my $object = [% module.package %]->new();
+isa_ok($object, "[% module.package %]");
+# Do all data members have the right value?
+[% FOREACH member = module.fields.values %]
+[%- SET expected = member.set || member.default || "undef" %]
+[% IF expected.match("sub {"); NEXT; END; %]
+is_deeply($object->{[%member.name%]}, [%expected %], 
+    "Constructor set \$object->{[%member.name%]} OK");
+[% END %]
+
+[%
+FOREACH method = module.methods;
+    IF method.type == 'accessor';
+        INCLUDE accessor_test;
+    ELSIF method.type == 'classmethod';
+        INCLUDE classmethod_test;
+    ELSIF method.type == 'method';
+        INCLUDE method_test;
+    #ELSIF method.type == 'delegate';
+    #    INCLUDE delegate_test;
+    END;
+END;
+%]

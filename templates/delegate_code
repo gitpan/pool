@@ -1,0 +1,4 @@
+sub [% method.name %] {
+    my $self = shift;
+    return $self->[% method.via %]->[% method.how %](@_);
+}

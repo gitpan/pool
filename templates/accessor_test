@@ -1,0 +1,23 @@
+# Test the [% method.name %] accessor
+[% 
+    SET member = module.fields.${method.name};
+    SET expected = member.set || member.default || "undef";
+
+    IF method.var == "array";
+        SET rvar = "@stuff";
+        SET needs_ref = "\\";
+    ELSIF method.var == "hash";
+        SET rvar = "%stuff";
+        SET needs_ref = "\\";
+    ELSE;
+        SET rvar = "\$stuff";
+        SET needs_ref = "";
+    END;
+
+    IF NOT expected.match("sub {"); -%]
+{
+my [% rvar %] = $object->[%method.name%]();
+is_deeply([%needs_ref%][%rvar%], [%expected %], 
+    "[%method.name%] initially returns [%expected%]");
+}
+[% END -%]

@@ -1,0 +1,130 @@
+#!/usr/bin/perl
+use Template;
+my ($short, $gecos, $home) = (getpwuid($>))[0,6,7];
+my $config = {
+    INCLUDE_PATH=> ["templates/",
+                    "$home/.pool/", 
+                    "/usr/share/pool/templates/"],
+};
+
+use Sys::Hostname;
+my $author = { name => ($ENV{POOL_NAME} || $gecos), 
+              email => ($ENV{POOL_EMAIL} || "$short\@".hostname()) };
+
+my $t = new Template ($config);
+
+my $poolfile = shift;
+open my $fh, $poolfile or die "Can't open pool file: $!\n";
+
+my (@modules, @files);
+
+push @files, $poolfile;
+
+mkpath("t");
+my $testno = 1;
+while (my $module = parse_pool($fh)) {
+
+    # Make the module.
+    my $filename = "lib/".$module->{package}.".pm";
+    $filename =~ s{::}{/}g;
+    use File::Basename; use File::Path;
+    mkpath(dirname($filename));
+    $t->process("module", {module => $module,
+                           author => $author,
+                           year   => 1900+((localtime())[5])}, 
+                          $filename)
+        or die $t->error;
+
+    # Make the test
+    my $testfile = "t/".$testno++.".t";
+    $t->process("test",   {module => $module}, $testfile)
+        or die $t->error;
+
+    # Carry metadata
+    push @modules, $module;
+    push @files, $filename, $testfile;
+}
+
+my $everything = { modules => \@modules, 
+                   author  => $author,
+                   files   => \@files,
+                   year    => 1900+((localtime())[5]) },
+
+$t->process("readme", $everything, "README") && push(@files, "README");
+
+# Try to make a build script
+for ([buildpl => "Build.PL"], [makefilepl => "Makefile.PL"]) {
+    next unless $t->process($_->[0], $everything, $_->[1]);
+    push @files, $_->[1];
+    last;
+}
+
+# Write the MANIFEST
+open MF, ">MANIFEST" or die $!;
+print MF "$_\n" for @files;
+close MF;
+
+sub parse_pool {
+    my $fh = shift;
+    my $module = {};
+    1 while (defined ($_=<$fh>) and (/^\s*#.*/ or not /\S/));
+    return 0 unless $_;
+    die "Can't find package name in $_" unless /^([\w:]+)(?:\s+-(.*))?/;
+    $module->{package} = $1;
+    $module->{oneliner} = $2 if $2;
+    my @methods;
+    while (<$fh>) {
+        last if not /\S/ or not /^\s/;
+        if (/DESCRIPTION/) {
+            while (1) {
+                $_ = <$fh>;
+                last if /^\s*EOD\s*$/;
+                die "Can't find end of description" if eof;
+                $module->{description} .= $_;
+            }
+            $module->{description}=~s/^\n+//;
+            $module->{description}=~s/\n+$//;
+        } elsif (/^\s+(\w+)\s*$/) { # Plain method
+            push @methods, { type => "method", name => $1 }
+        } elsif (/^\s+((ro)?->)?\@(\w+)\s*(.*?)\s*$/) { # Some kind of member
+            my ($accessor, $ro, $name, $extra) = ($1,$2,$3,$4);
+            my $type = "scalar";
+            my $field = {name => $name};
+            if ($extra) {
+                if ($extra =~ /\[\]/)   { $type = "array"; }
+                if ($extra =~ /\{\}/)   { $type = "hash" unless $extra =~ /sub/; }
+                if ($extra =~ s/\|\|//)   { $field->{default} = $extra }
+                else                    { $field->{set}     = $extra }
+            }
+            $field->{type} = $type;
+            $module->{fields}{$name} = $field;
+            if ($accessor) {
+                push @methods, {
+                    type  => "accessor",
+                    ro    => $ro,
+                    name  => $name,
+                    var   => $type
+                }
+            }
+        } elsif (/^\s+(\w+)\s*->(\w+)(?:->(.*?))?\s*$/) { # Delegate
+            my ($name, $via, $how) = ($1,$2,$3);
+            $how ||= $name;
+            push @methods, {
+                type => "delegate",
+                name => $name,
+                via  => $via,
+                how => $how
+            };
+        }
+    }
+    $module->{version} ||= "1.0";
+    # Sort the methods, adding a constructor if necessary.
+    my %ranks = ( constructor => 1, accessor    => 2, method => 3,
+                  delegate    => 4, classmethod => 5);
+    $module->{methods} = [ sort {$ranks{$a->{type}} <=>
+                            $ranks{$b->{type}}} @methods ];
+    if ($module->{methods}[0]{type} ne "constructor") {
+        unshift @{$module->{methods}}, { type=>"constructor", name =>"new"}
+    }
+    return $module;
+}

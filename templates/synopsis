@@ -1,0 +1,15 @@
+[%-
+    FOREACH method = module.methods;
+        IF method.type == 'accessor';
+            INCLUDE accessor_synopsis;
+        ELSIF method.type == 'constructor';
+            INCLUDE constructor_synopsis;
+        ELSIF method.type == 'classmethod';
+            INCLUDE classmethod_synopsis;
+        ELSIF method.type == 'method';
+            INCLUDE method_synopsis;
+        ELSIF method.type == 'delegate';
+            INCLUDE delegate_synopsis;
+        END;
+    END;
+-%]

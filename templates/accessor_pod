@@ -1,0 +1,12 @@
+
+=head2 [% method.name %]
+
+[% INCLUDE accessor_synopsis -%]
+[% IF method.ro;
+"Gets the value of the object's "; method.name;
+ELSE;
+"Gets (and optionally sets) the value of the object's "; method.name;
+END; %]
+
+=cut
+

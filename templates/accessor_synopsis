@@ -1,0 +1,7 @@
+	$self->[% method.name %]();    # Get [% method.name %]
+
+[%- IF method.ro != "ro";
+	'	$self->'; method.name; "(...); # Set ";  method.name; "\n";
+END; 
+-%]
+

@@ -1,0 +1,19 @@
+Devel::DProfPP - Parse C<Devel::DProf> output
+    DESCRIPTION
+
+This module takes the output file from L<Devel::DProf> (typically
+F<tmon.out>) and parses it into a Perl data structure. Additionally, it
+can be used in an event-driven style to produce reports more
+immediately.
+
+    EOD
+    @fh
+    ->@enter    || sub {}
+    ->@leave    || sub {}
+    ro->@stack  []
+    @syms       []
+    parse
+    top_frame   ->stack->[0]
+
+# Other POOL notes
+#  classmethod...

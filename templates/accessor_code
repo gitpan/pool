@@ -1,0 +1,16 @@
+sub [% method.name %] {
+    my $self = shift;
+[%-
+    IF method.var == "array";
+        SET whole_thing = '@{$self->{' _ method.name _ '}}';
+    ELSIF method.var == "hash";
+        SET whole_thing = '%{$self->{' _ method.name _ '}}';
+    ELSE;
+        SET whole_thing = '$self->{'   _ method.name _ '}';
+    END;
+-%]
+[%    IF method.ro != "ro"; %]
+    if (defined @_) { [% whole_thing %] = @_ };
+[%    END; %]
+    return [% whole_thing %];
+}

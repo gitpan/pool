@@ -1,0 +1,18 @@
+[%
+    IF method.type == 'accessor';
+        INCLUDE accessor_pod;
+        INCLUDE accessor_code;
+    ELSIF method.type == 'constructor';
+        INCLUDE constructor_pod;
+        INCLUDE constructor_code;
+    ELSIF method.type == 'classmethod';
+        INCLUDE classmethod_pod;
+        INCLUDE classmethod_code;
+    ELSIF method.type == 'method';
+        INCLUDE method_pod;
+        INCLUDE method_code;
+    ELSIF method.type == 'delegate';
+        INCLUDE delegate_pod;
+        INCLUDE delegate_code;
+    END;
+%]

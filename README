@@ -1,0 +1,200 @@
+
+=head1 TITLE
+
+POOL - The Perl Object-Oriented (Definition) Language
+
+=head1 DESCRIPTION
+
+This is an initial release of the POOL code generation system. The basic
+idea behind POOL is to write object-oriented classes so you don't have
+to. You specify a very simple description of what you want your class to
+look like, and the POOL code generator does the rest, turning the
+definition into code, tests, documentation, and so on. 
+
+As it's an initial release, it's rather rough around the edges, and this
+is the only documentation, but I'm releasing it now on the "half a loaf"
+principle.
+
+=head1 INSTALLATION
+
+POOL requires the following Perl modules to be installed:
+
+    Template
+    Sys::Hostname (core)
+
+It also requires the template files found in the F<template/> directory
+to be installed somewhere it can find it. This is currently either
+F</usr/share/pool/templates> or F<~/.pool/>. Templates in your local
+F<~/.pool> will override the system-wide ones in F</usr/share>; you can
+have an even more local directory called F<templates> in your current
+path.
+
+Next you'll probably want to put C<pool> itself somewhere you can
+execute it.
+
+Now I suppose you're going to want to know how to use it.
+
+=head1 USAGE
+
+The general procedure for writing a module with POOL is as follows:
+
+=over 3
+
+=item 1
+
+Make a new directory to hold your module and change into it.
+
+=item 2
+
+Write your POOL file as described below.
+
+=item 3
+
+Optionally, set the environment variables C<POOL_NAME> and C<POOL_EMAIL>
+to be your full name and email address.
+
+=item 3
+
+Run
+
+    pool your.pool
+
+=item 4
+
+Edit the resulting files.
+
+=cut
+
+At present, this will generate a bunch of modules in F<lib/>, a set of
+tests in F<t/>, a simple F<Makefile.PL> and a F<MANIFEST> file. It
+would prefer to make a C<Module::Build> F<Build.PL> file, but I haven't
+written the templates for that yet. If you write a F<buildpl> template,
+it'll use that instead.
+
+=head1 SYNTAX
+
+The syntax for POOL is a bit ad-hoc at the moment and I expect it to
+remain ad-hoc for a few versions until I've worked out how to specify
+everything I want to specify.
+
+Let's look at the sample POOL file specified, to show the main features
+of the language.
+
+    Devel::DProfPP - Parse C<Devel::DProf> output
+
+The first line contains the name of the module, and optionally a hyphen
+and the short description. Some general points about POOL: comments are
+specified with a C<# ... >, and a blank line separates different classes
+in a module. The first class specified should be the "main" one, but you
+can have as many classes as you like in a POOL file.
+
+        DESCRIPTION
+
+    This module takes the output file from L<Devel::DProf> (typically
+    F<tmon.out>) and parses it into a Perl data structure. Additionally, it
+    can be used in an event-driven style to produce reports more
+    immediately.
+
+        EOD
+
+The description, which ends with the magic text C<EOD>. This is
+optional, and appears in the C<DESCRIPTION> section of the class's
+documentation. It's the only place in a POOL file you can get away with
+a blank line.
+
+        @fh
+
+C<fh> is a member variable which does not have an accessor or a default.
+
+        ->@enter    || sub {}
+        ->@leave    || sub {}
+
+C<enter> and C<leave> are variables with an accessor, with default
+values of C<sub {}> if no C<enter> (or C<leave>) parameter is given to
+the constructor.
+
+        ro->@stack  []
+
+The stack is a member variable which is initialized to be an empty array
+reference. As it's initialized, you can't pass a C<stack> parameter to
+the constructor. There's also a read-only accessor generator for this
+member. As it knows that C<stack> is going to be an array, it will
+dereference this array before returning it.
+
+        @syms       []
+
+C<syms> is a completely internal member variable, initialized to C<[]>,
+and with no accessor.
+
+        parse
+
+This is just an ordinary method.
+
+        top_frame   ->stack->[0]
+
+This is a delegate method. It returns the first element of the result
+from calling C<stack>. This is me being overly clever, and probably
+won't work. Normally you'd use this with another method name:
+
+        header_get  ->header->get
+
+would delegate the C<header_get> method to the C<get> method of the
+result of calling C<header>. You can also say
+
+        get         ->header->
+
+to pass on the C<get> method. (This will define a C<get> method which
+calls C<< $self->header->get >>).
+
+Note that we didn't specify a constructor, and so a C<new> constructor
+is automatically defined.
+
+Other things I need to think about are a syntax for class methods, a way
+to define metadata like version numbers, but this does most of what I
+want for now.
+
+=head1 TEMPLATING
+
+The beauty of POOL is that the code generation is all done through
+Template Toolkit templates and components. Don't like the default method
+code you get? No problem, just write your own C<method_code> template.
+Do you want your tests provided inline a la C<Test::Inline>? No problem,
+alter C<do_method> so that it calls the appropriate C<method_test>
+routines in the right place.
+
+I hope to add a "flavour" system to C<POOL> whereby you can pick and
+choose what templates to apply - there'll be a directory of templates
+which implement inline tests, one with more sophisticated accessors, and
+so on, and you'll be able to say 
+C<pool --flavors="testinline,myaccessor" foo.pool>.
+
+For that to happen, though, I'm going to need to build up a library of
+neat template hacks. Please send me your neat template hacks.
+
+For your reference, here's the data structures provided to the
+templates:
+
+    author
+        .name              Your name
+        .email             Your email address
+    year                   The current year
+    module                 The current module
+        .package           Its Perl package name
+        .description       The description
+        .methods           A list of defined methods
+            .name          The name of the method
+            .type          Its type: method / accessor / delegate /
+                                    constructor / classmethod
+            .via           Delegation method for delegates
+            .how           Delegation goes $self->via->how
+            .ro            Is this accessor read-only?
+            .var           Is this accessor's member scalar/array/hash?
+        .fields            A HASH of defined member variables
+            .name          The member's name
+            .default       Any default value
+            .set           Any pre-initialized non-default
+            .type          Scalar/array/hash
+
+=head1 AUTHOR
+
+Simon Cozens, C<simon@cpan.org>

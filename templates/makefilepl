@@ -1,0 +1,7 @@
+use 5.006;
+use ExtUtils::MakeMaker;
+WriteMakefile(
+    'NAME'              => '[% modules.0.package %]',
+    'VERSION_FROM'      => '[% files.1 %]',
+    'PREREQ_PM'         => {}, # Not until I work out how to do this
+);

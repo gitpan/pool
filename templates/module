@@ -1,0 +1,19 @@
+package [% module.package %];
+[% INCLUDE module_header %]
+=head1 SYNOPSIS
+
+[% INCLUDE synopsis %]
+=head1 DESCRIPTION
+
+[% module.description  %]
+
+=head1 METHODS
+[% 
+    FOREACH method = module.methods;
+        INCLUDE do_method;
+    END
+%]
+
+[% INCLUDE module_footer %]
+
+1;

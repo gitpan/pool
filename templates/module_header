@@ -1,0 +1,9 @@
+use 5.006;
+use strict;
+use warnings;
+use Carp;
+our $VERSION = '[% module.version %]';
+
+=head1 NAME
+
+[% module.package %] - [% module.oneliner %]

@@ -1,0 +1,4 @@
+[% INCLUDE support %]
+[% INCLUDE license %]
+[% INCLUDE author %]
+[% INCLUDE seealso %]

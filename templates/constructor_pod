@@ -1,0 +1,9 @@
+
+=head2 [% method.name %]
+
+    $self->[%method.name%]
+
+Creates a new [%module.package %] instance.
+
+=cut
+

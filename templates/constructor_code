@@ -1,0 +1,16 @@
+
+sub [% method.name %] {
+    my $class = shift;
+    my %args = @_;
+    my $self = bless {
+[% FOREACH member = module.fields.values -%]
+[%- IF member.set -%]
+        [% member.name %] => [% member.set %],
+[%- ELSE -%]
+        [% member.name %] => $args{[%member.name%]} 
+            [% member.default && (" || " _ member.default) %],
+[%- END %]
+[% END %]
+    }, $class;
+    return $self;
+}

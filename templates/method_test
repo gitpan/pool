@@ -1,0 +1,2 @@
+# Test the [% method.name %] method exists
+ok($object->can("[% method.name %]"), "We can call [%method.name%]");
